@@ -2,8 +2,8 @@ package logic
 
 
 const (
-	white = 0
-	black = 1
+	White = 0
+	Black = 1
 )
 
 

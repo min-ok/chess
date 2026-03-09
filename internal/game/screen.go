@@ -13,13 +13,13 @@ import (
 
 
 func (g *Game) drawTextScreen(t string) {
-	scale := ebiten.Monitor().DeviceScaleFactor()
+	g.screenState.Clear()
 
 	op := &text.DrawOptions{}
 
     face := &text.GoTextFace{
         Source: g.FaceSource,
-        Size:   24 * scale,
+        Size: 72,
     }
 
     w, h := text.Measure(t, face, op.LineSpacing)

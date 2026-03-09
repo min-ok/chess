@@ -2,12 +2,11 @@ package logic
 
 import "math/bits"
 
-//
-//
+
 // SquaresAttacked - это именно клетки под атакой, там и свои и чужие фигуры могут быть
 // PossibleMoves - это возможные ходы: куда может походить или кого съесть (SquaresAttacked без клеток своей команды)
-// leagleMoves - легальные ходы, которые получаются после обрабоки PossibleMoves, leagleMoves учитывают шах своему королю
-// (если после PossibleMove свой король под шахом, то такой ход хапрещен)
+// LegalMoves - легальные ходы, которые получаются после обрабоки PossibleMoves, LegalMoves учитывают шах своему королю
+// (если после PossibleMove свой король под шахом, то такой ход запрещен)
 
 
 func CreateBoard() *Board {
@@ -47,18 +46,18 @@ func (b *Board) isMoveSafe(p1, p2 uint64) bool {
 	tempBoard.move(p1, p2)
 
 	var kingPos uint64
-	if team == white {
-		kingPos = tempBoard.whiteFigures.king
+	if team == White {
+		kingPos = tempBoard.WhiteFigures.king
 	} else {
-		kingPos = tempBoard.blackFigures.king
+		kingPos = tempBoard.BlackFigures.king
 	}
 
-	return !tempBoard.isChecked(kingPos)
+	return !tempBoard.isChecked(kingPos, team)
 }
 
 
 func (b *Board) GetLegalMoves(p uint64) uint64 {
-	if p & b.occupied == 0 /*|| b.getPieceTeam(p) != b.turn*/ {
+	if p & b.occupied == 0 || b.getPieceTeam(p) != b.turn {
 		return 0
 	}
 
@@ -109,9 +108,9 @@ func (b *Board) move(from uint64, to uint64) {
 	switch t {
 	case pawn:
 
-	if team == white && to & rank8 != 0 {
+	if team == White && to & rank8 != 0 {
 		figs.queens |= to
-	} else if team == black && to & rank1 != 0 {
+	} else if team == Black && to & rank1 != 0 {
 		figs.queens |= to
 	} else {
 		figs.pawns |= to
@@ -130,7 +129,7 @@ func (b *Board) move(from uint64, to uint64) {
 
 func (b *Board) checkGameStatus(team int) int {
 	kingPos := b.getKing(team)
-	inCheck := b.isChecked(kingPos)
+	inCheck := b.isChecked(kingPos, team)
 
 	hasMoves := false
 
@@ -162,17 +161,15 @@ func (b *Board) checkGameStatus(team int) int {
 }
 
 
-func (b *Board) isChecked(p uint64) bool {
-	team := b.getPieceTeam(p)
-
+func (b *Board) isChecked(p uint64, team int) bool {
 	enemyBitboard := b.getBitboard(getOppositeTeam(team))
 
-	if team == white {
-		if (p << 7 & b.blackFigures.pawns & notH) != 0 { return true }
-		if (p << 9 & b.blackFigures.pawns & notA) != 0 { return true }
+	if team == White {
+		if (p << 7 & b.BlackFigures.pawns & notH) != 0 { return true }
+		if (p << 9 & b.BlackFigures.pawns & notA) != 0 { return true }
 	} else {
-		if (p >> 7 & b.whiteFigures.pawns & notA) != 0 { return true }
-		if (p >> 9 & b.whiteFigures.pawns & notH) != 0 { return true }
+		if (p >> 7 & b.WhiteFigures.pawns & notA) != 0 { return true }
+		if (p >> 9 & b.WhiteFigures.pawns & notH) != 0 { return true }
 	}
 
 	if (b.getBishopSquaresAttacked(p) & (enemyBitboard.bishops | enemyBitboard.queens)) != 0 { return true }
@@ -182,3 +179,6 @@ func (b *Board) isChecked(p uint64) bool {
 
 	return false
 }
+
+
+// func (b *Board) castling()

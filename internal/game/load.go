@@ -10,21 +10,30 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-func loadSprite(path string) *ebiten.Image {
+
+func loadSprite(path string, g *Game) *ebiten.Image {
 	img, _, err := ebitenutil.NewImageFromFile(path)
 	if err != nil {
 		panic(err)
 	}
-	return img
+
+	res := ebiten.NewImage(img.Bounds().Dx() * g.scale, img.Bounds().Dy() * g.scale)
+
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(g.scale), float64(g.scale))
+
+	res.DrawImage(img, op)
+	return res
 }
 
+
 func loadImages(g *Game) {
-	g.boardImage = loadSprite("internal/assets/textures/boards/board_1.png")
-	g.pointerImage = loadSprite("internal/assets/textures/pointer.png")
+	g.boardImage = loadSprite("internal/assets/textures/boards/board_1.png", g)
+	g.pointerImage = loadSprite("internal/assets/textures/pointer.png", g)
 
 	for teamNum, pieceTeam := range [2]string{"white", "black"} {
 		for typeNum, pieceType := range [6]string{"pawn", "bishop", "knight", "rook", "queen", "king"} {
-			g.pieceImages[teamNum][typeNum] = loadSprite(fmt.Sprintf("internal/assets/textures/pieces/%s_%s.png", pieceType, pieceTeam))
+			g.pieceImages[teamNum][typeNum] = loadSprite(fmt.Sprintf("internal/assets/textures/pieces/%s_%s.png", pieceType, pieceTeam), g)
 		}
 	}
 }

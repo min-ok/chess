@@ -7,9 +7,9 @@ func (b *Board) getPawnSquaresAttacked(p uint64) uint64 {
 	t := b.getPieceTeam(p)
 	if t == -1 { panic(t) }
 
-	if (t == white) {
-		moves |= (p << 7) & b.blackFigures.all & notH
-	 	moves |= (p << 9) & b.blackFigures.all & notA
+	if (t == White) {
+		moves |= (p << 7) & b.BlackFigures.all & notH
+	 	moves |= (p << 9) & b.BlackFigures.all & notA
 
 		step := p << 8
 		if step & b.occupied == 0 {
@@ -20,8 +20,8 @@ func (b *Board) getPawnSquaresAttacked(p uint64) uint64 {
 			}
 		}
 	} else {
-		moves |= (p >> 7) & b.whiteFigures.all & notA
-	 	moves |= (p >> 9) & b.whiteFigures.all & notH
+		moves |= (p >> 7) & b.WhiteFigures.all & notA
+	 	moves |= (p >> 9) & b.WhiteFigures.all & notH
 
 		step := p >> 8
 		if step & b.occupied == 0 {
