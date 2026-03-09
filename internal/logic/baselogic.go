@@ -15,49 +15,59 @@ type Bitboard struct {
 
 
 type Board struct {
-	WhiteFigures Bitboard
-	BlackFigures Bitboard
+	whiteFigures Bitboard
+	blackFigures Bitboard
 	occupied uint64
+
+	whiteLongCastling bool
+	whiteShortCastling bool
+	blackLongCastling bool
+	blackShortCastling bool
 
 	turn int
 }
 
 
 func (b *Board) arrangeFigures() {
-	b.WhiteFigures.pawns = 0x000000000000FF00
-	b.WhiteFigures.knights = 0x0000000000000042
-	b.WhiteFigures.bishops = 0x0000000000000024
-	b.WhiteFigures.rooks = 0x0000000000000081
-	b.WhiteFigures.queens = 0x0000000000000008
-	b.WhiteFigures.king = 0x00000000000000010
+	b.whiteFigures.pawns = 0x000000000000FF00
+	b.whiteFigures.knights = 0x0000000000000042
+	b.whiteFigures.bishops = 0x0000000000000024
+	b.whiteFigures.rooks = 0x0000000000000081
+	b.whiteFigures.queens = 0x0000000000000008
+	b.whiteFigures.king = 0x00000000000000010
 
-	b.BlackFigures.pawns = 0x00FF000000000000
-	b.BlackFigures.knights = 0x4200000000000000
-	b.BlackFigures.bishops = 0x2400000000000000
-	b.BlackFigures.rooks = 0x8100000000000000
-	b.BlackFigures.queens = 0x0800000000000000
-	b.BlackFigures.king = 0x1000000000000000
+	b.blackFigures.pawns = 0x00FF000000000000
+	b.blackFigures.knights = 0x4200000000000000
+	b.blackFigures.bishops = 0x2400000000000000
+	b.blackFigures.rooks = 0x8100000000000000
+	b.blackFigures.queens = 0x0800000000000000
+	b.blackFigures.king = 0x1000000000000000
+
+	b.whiteLongCastling = true
+	b.whiteShortCastling = true
+	b.blackLongCastling = true
+	b.blackShortCastling = true
 }
 
 
 func (b *Board) getPieceType(p uint64) int {
-	if (b.WhiteFigures.pawns | b.BlackFigures.pawns) & p != 0 { return pawn }
-	if (b.WhiteFigures.bishops | b.BlackFigures.bishops) & p != 0 { return bishop }
-	if (b.WhiteFigures.knights | b.BlackFigures.knights) & p != 0 { return knight }
-	if (b.WhiteFigures.rooks | b.BlackFigures.rooks) & p != 0 { return rook }
-	if (b.WhiteFigures.queens | b.BlackFigures.queens) & p != 0 { return queen }
-	if (b.WhiteFigures.king | b.BlackFigures.king) & p != 0 { return king }
+	if (b.whiteFigures.pawns | b.blackFigures.pawns) & p != 0 { return Pawn }
+	if (b.whiteFigures.bishops | b.blackFigures.bishops) & p != 0 { return Bishop }
+	if (b.whiteFigures.knights | b.blackFigures.knights) & p != 0 { return Knight }
+	if (b.whiteFigures.rooks | b.blackFigures.rooks) & p != 0 { return Rook }
+	if (b.whiteFigures.queens | b.blackFigures.queens) & p != 0 { return Queen }
+	if (b.whiteFigures.king | b.blackFigures.king) & p != 0 { return King }
 
 	panic("not such type (getPieceType)")
 }
 
 
 func (b *Board) getPieceTeam(p uint64) int {
-	if b.WhiteFigures.all & p != 0 {
+	if b.whiteFigures.all & p != 0 {
 		return White
 	}
 
-	if b.BlackFigures.all & p != 0 {
+	if b.blackFigures.all & p != 0 {
 		return Black
 	}
 
@@ -67,11 +77,11 @@ func (b *Board) getPieceTeam(p uint64) int {
 
 func (b *Board) getBitboard(team int) *Bitboard {
 	 if team == White {
-		return &b.WhiteFigures
+		return &b.whiteFigures
 	 }
 
 	if team == Black {
-		return &b.BlackFigures
+		return &b.blackFigures
 	}
 
 	panic("not right team (getFriendlyBitboard)")
@@ -80,11 +90,11 @@ func (b *Board) getBitboard(team int) *Bitboard {
 
 func (b *Board) getKing(team int) uint64 {
 	if team == White {
-		return b.WhiteFigures.king
+		return b.whiteFigures.king
 	}
 
 	if team == Black {
-		return b.BlackFigures.king
+		return b.blackFigures.king
 	}
 
 	panic("not such team (getKing)")
@@ -97,45 +107,45 @@ func getOppositeTeam(team int) int {
 
 
 func (b *Board) removePiece(p uint64) {
-	b.WhiteFigures.pawns &= ^p
-	b.WhiteFigures.bishops &= ^p
-	b.WhiteFigures.knights &= ^p
-	b.WhiteFigures.rooks &= ^p
-	b.WhiteFigures.queens &= ^p
-	b.WhiteFigures.king &= ^p
+	b.whiteFigures.pawns &= ^p
+	b.whiteFigures.bishops &= ^p
+	b.whiteFigures.knights &= ^p
+	b.whiteFigures.rooks &= ^p
+	b.whiteFigures.queens &= ^p
+	b.whiteFigures.king &= ^p
 
-	b.BlackFigures.pawns &= ^p
-	b.BlackFigures.bishops &= ^p
-	b.BlackFigures.knights &= ^p
-	b.BlackFigures.rooks &= ^p
-	b.BlackFigures.queens &= ^p
-	b.BlackFigures.king &= ^p
+	b.blackFigures.pawns &= ^p
+	b.blackFigures.bishops &= ^p
+	b.blackFigures.knights &= ^p
+	b.blackFigures.rooks &= ^p
+	b.blackFigures.queens &= ^p
+	b.blackFigures.king &= ^p
 }
 
 
 func (b *Board) updateAll() {
-	b.WhiteFigures.all = b.WhiteFigures.pawns | b.WhiteFigures.bishops | b.WhiteFigures.knights | b.WhiteFigures.rooks | b.WhiteFigures.queens | b.WhiteFigures.king
-	b.BlackFigures.all = b.BlackFigures.pawns | b.BlackFigures.bishops | b.BlackFigures.knights | b.BlackFigures.rooks | b.BlackFigures.queens | b.BlackFigures.king
-	b.occupied = b.WhiteFigures.all | b.BlackFigures.all
+	b.whiteFigures.all = b.whiteFigures.pawns | b.whiteFigures.bishops | b.whiteFigures.knights | b.whiteFigures.rooks | b.whiteFigures.queens | b.whiteFigures.king
+	b.blackFigures.all = b.blackFigures.pawns | b.blackFigures.bishops | b.blackFigures.knights | b.blackFigures.rooks | b.blackFigures.queens | b.blackFigures.king
+	b.occupied = b.whiteFigures.all | b.blackFigures.all
 }
 
 
 func (b *Board) GetFigures() [2][6]uint64 {
 	var res [2][6]uint64
 
-	res[White][pawn] = b.WhiteFigures.pawns
-	res[White][bishop] = b.WhiteFigures.bishops
-	res[White][knight] = b.WhiteFigures.knights
-	res[White][rook] = b.WhiteFigures.rooks
-	res[White][queen] = b.WhiteFigures.queens
-	res[White][king] = b.WhiteFigures.king
+	res[White][Pawn] = b.whiteFigures.pawns
+	res[White][Bishop] = b.whiteFigures.bishops
+	res[White][Knight] = b.whiteFigures.knights
+	res[White][Rook] = b.whiteFigures.rooks
+	res[White][Queen] = b.whiteFigures.queens
+	res[White][King] = b.whiteFigures.king
 
-	res[Black][pawn] = b.BlackFigures.pawns
-	res[Black][bishop] = b.BlackFigures.bishops
-	res[Black][knight] = b.BlackFigures.knights
-	res[Black][rook] = b.BlackFigures.rooks
-	res[Black][queen] = b.BlackFigures.queens
-	res[Black][king] = b.BlackFigures.king
+	res[Black][Pawn] = b.blackFigures.pawns
+	res[Black][Bishop] = b.blackFigures.bishops
+	res[Black][Knight] = b.blackFigures.knights
+	res[Black][Rook] = b.blackFigures.rooks
+	res[Black][Queen] = b.blackFigures.queens
+	res[Black][King] = b.blackFigures.king
 
 	return res
 }

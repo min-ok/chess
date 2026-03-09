@@ -26,12 +26,12 @@ func (b *Board) getPossibleMoves(p uint64) uint64 {
 	friendlyPiece := b.getBitboard(b.getPieceTeam(p)).all
 
 	switch t {
-	case pawn: return b.getPawnSquaresAttacked(p)
-	case bishop: return b.getBishopSquaresAttacked(p) & ^friendlyPiece
-	case knight: return b.getKnightSquaresAttacked(p) & ^friendlyPiece
-	case rook: return b.getRookSquaresAttacked(p) & ^friendlyPiece
-	case queen: return b.getQueenSquaresAttacked(p) & ^friendlyPiece
-	case king: return b.getKingSquaresAttacked(p) & ^friendlyPiece
+	case Pawn: return b.getPawnSquaresAttacked(p)
+	case Bishop: return b.getBishopSquaresAttacked(p) & ^friendlyPiece
+	case Knight: return b.getKnightSquaresAttacked(p) & ^friendlyPiece
+	case Rook: return b.getRookSquaresAttacked(p) & ^friendlyPiece
+	case Queen: return b.getQueenSquaresAttacked(p) & ^friendlyPiece
+	case King: return ( b.getKingSquaresAttacked(p) | b.getCastling(p) ) & ^friendlyPiece
 	}
 
 	return 0
@@ -47,9 +47,9 @@ func (b *Board) isMoveSafe(p1, p2 uint64) bool {
 
 	var kingPos uint64
 	if team == White {
-		kingPos = tempBoard.WhiteFigures.king
+		kingPos = tempBoard.whiteFigures.king
 	} else {
-		kingPos = tempBoard.BlackFigures.king
+		kingPos = tempBoard.blackFigures.king
 	}
 
 	return !tempBoard.isChecked(kingPos, team)
@@ -57,7 +57,7 @@ func (b *Board) isMoveSafe(p1, p2 uint64) bool {
 
 
 func (b *Board) GetLegalMoves(p uint64) uint64 {
-	if p & b.occupied == 0 || b.getPieceTeam(p) != b.turn {
+	if p & b.occupied == 0 /*|| b.getPieceTeam(p) != b.turn*/ {
 		return 0
 	}
 
@@ -96,6 +96,7 @@ func (b *Board) MakePlayerMove(from, to uint64) (int, int) {
 }
 
 
+
 func (b *Board) move(from uint64, to uint64) {
 	t := b.getPieceType(from)
 	team := b.getPieceTeam(from)
@@ -105,22 +106,53 @@ func (b *Board) move(from uint64, to uint64) {
 
 	figs := b.getBitboard(team)
 
-	switch t {
-	case pawn:
+	if from == A1 || to == A1 { b.whiteLongCastling = false }
+	if from == H1 || to == H1 { b.whiteShortCastling = false }
+	if from == A8 || to == A8 { b.blackLongCastling = false }
+	if from == H8 || to == H8 { b.blackShortCastling = false }
 
-	if team == White && to & rank8 != 0 {
+
+	switch t {
+	case Pawn:
+
+	if team == White && to & Rank8 != 0 {
 		figs.queens |= to
-	} else if team == Black && to & rank1 != 0 {
+	} else if team == Black && to & Rank1 != 0 {
 		figs.queens |= to
 	} else {
 		figs.pawns |= to
 	}
 
-	case bishop: figs.bishops |= to
-	case knight: figs.knights |= to
-	case rook: figs.rooks |= to
-	case queen: figs.queens |= to
-	case king: figs.king |= to
+	case Bishop: figs.bishops |= to
+	case Knight: figs.knights |= to
+	case Rook: figs.rooks |= to
+	case Queen: figs.queens |= to
+	case King:
+
+
+	if team == White && from == E1 {
+		switch to {
+		case G1:
+			b.removePiece(H1)
+			figs.rooks |= F1
+		case C1:
+			b.removePiece(A1)
+			figs.rooks |= D1
+		}
+		b.whiteShortCastling, b.whiteLongCastling = false, false
+	} else if from == E8 {
+		switch to {
+		case G8:
+			b.removePiece(H8)
+			figs.rooks |= F8
+		case C8:
+			b.removePiece(A8)
+			figs.rooks |= D8
+		}
+		b.blackShortCastling, b.blackLongCastling = false, false
+	}
+
+	figs.king |= to
 	}
 
 	b.updateAll()
@@ -165,11 +197,11 @@ func (b *Board) isChecked(p uint64, team int) bool {
 	enemyBitboard := b.getBitboard(getOppositeTeam(team))
 
 	if team == White {
-		if (p << 7 & b.BlackFigures.pawns & notH) != 0 { return true }
-		if (p << 9 & b.BlackFigures.pawns & notA) != 0 { return true }
+		if (p << 7 & b.blackFigures.pawns & NotH) != 0 { return true }
+		if (p << 9 & b.blackFigures.pawns & NotA) != 0 { return true }
 	} else {
-		if (p >> 7 & b.WhiteFigures.pawns & notA) != 0 { return true }
-		if (p >> 9 & b.WhiteFigures.pawns & notH) != 0 { return true }
+		if (p >> 7 & b.whiteFigures.pawns & NotA) != 0 { return true }
+		if (p >> 9 & b.whiteFigures.pawns & NotH) != 0 { return true }
 	}
 
 	if (b.getBishopSquaresAttacked(p) & (enemyBitboard.bishops | enemyBitboard.queens)) != 0 { return true }
@@ -179,6 +211,3 @@ func (b *Board) isChecked(p uint64, team int) bool {
 
 	return false
 }
-
-
-// func (b *Board) castling()
