@@ -3,8 +3,6 @@ package logic
 // Здесь функции, которые напрямую работают с Board, это низкие функции, достаточно тупые функции
 // Написаны просто перебором значений для скорости
 
-import "math/bits"
-
 
 type Bitboard struct {
 	pawns uint64
@@ -162,38 +160,4 @@ func (b *Board) GetFigures() [2][6]uint64 {
 	res[Black][King] = b.blackFigures.king
 
 	return res
-}
-
-
-const (
-	PawnCost = 1000
-	BishopCost = 3000
-	KnightCost = 4000
-	RookCost = 5000
-	QueenCost = 9000
-	KingCost = 1000000
-)
-
-
-func (b *Board) Evaluate() int {
-	sum := ( bits.OnesCount64(b.whiteFigures.pawns) - bits.OnesCount64(b.blackFigures.pawns) ) * PawnCost
-	sum += ( bits.OnesCount64(b.whiteFigures.bishops) - bits.OnesCount64(b.blackFigures.bishops) ) * BishopCost
-	sum += ( bits.OnesCount64(b.whiteFigures.knights) - bits.OnesCount64(b.blackFigures.knights) ) * KnightCost
-	sum += ( bits.OnesCount64(b.whiteFigures.rooks) - bits.OnesCount64(b.blackFigures.rooks) ) * RookCost
-	sum += ( bits.OnesCount64(b.whiteFigures.queens) - bits.OnesCount64(b.blackFigures.queens) ) * QueenCost
-	sum += ( bits.OnesCount64(b.whiteFigures.king) - bits.OnesCount64(b.blackFigures.king) ) * KingCost
-
-
-	return sum
-}
-
-
-func (b *Board) pushHistory(m Move) {
-	b.history[b.historyLen] = m
-	b.historyLen += 1
-}
-
-func (b *Board) popHistory() Move {
-	b.historyLen -= 1
-	return b.history[b.historyLen]
 }

@@ -20,9 +20,7 @@ func CreateBoard() *Board {
 }
 
 
-
 func (b *Board) getPossibleMoves(p uint64, team int, piece int) uint64 {
-
 	friendlyPiece := b.getBitboard(team).all
 
 	switch piece {
@@ -56,11 +54,7 @@ func (b *Board) isMoveSafe(from, to uint64, team int, piece int) bool {
 }
 
 
-func (b *Board) GetLegalMoves(p uint64, team int, piece int) uint64 {
-	if p & b.occupied == 0 || team != b.turn {
-		return 0
-	}
-
+func (b *Board) getLegalMoves(p uint64, team int, piece int) uint64 {
 	var legalMoves uint64
 
 	pm := b.getPossibleMoves(p, team, piece)
@@ -81,34 +75,72 @@ func (b *Board) GetLegalMoves(p uint64, team int, piece int) uint64 {
 
 
 
-func (b *Board) GetEnemyFigures(p uint64) uint64 {
-	if p & b.occupied == 0 {
-		return 0
+func (b *Board) move(from uint64, to uint64, team int, piece int) {
+	eatenPieceType := b.GetPieceType(to)
+
+	flip := from | to
+
+	m := Move {
+		from: from, to: to,
+		team: team,
+		eatenPiece: eatenPieceType,
+		movingPiece: piece,
+		oldFlags: b.flags,
 	}
-	return b.getBitboard(getOppositeTeam(b.GetPieceTeam(p))).all
-}
 
+	b.history[b.historyLen] = m
+	b.historyLen += 1
 
-func (b *Board) MakePlayerMove(from, to uint64) (int, int) {
-	b.move(from, to, b.turn, b.GetPieceType(from))
-	b.turn = getOppositeTeam(b.turn)
+	if eatenPieceType != Empty {
+		b.removePiece(to)
+	}
 
-	bestMove := b.GetBestMove(5, b.turn)
-	b.move(bestMove.from, bestMove.to, bestMove.team, bestMove.movingPiece)
-	b.turn = getOppositeTeam(b.turn)
+	figs := b.getBitboard(team)
 
-	return b.checkGameStatus(b.turn), b.turn
-}
+	if from == h1 || to == h1 { b.flags &= ^whiteShortCastling }
+	if from == a1 || to == a1 { b.flags &= ^whiteLongCastling }
+	if from == h8 || to == h8 { b.flags &= ^blackShortCastling }
+	if from == a8 || to == a8 { b.flags &= ^blackLongCastling }
 
+	switch piece {
+	case Pawn:
+		if to & ( rank1 | rank8 ) != 0 {
+			figs.pawns &= ^from
+			figs.queens |= to
+		} else {
+			figs.pawns ^= flip
+		}
 
-func (b *Board) MakePlayerUndo() {
-	b.undo()
-	b.turn = getOppositeTeam(b.turn)
+	case Bishop: figs.bishops ^= flip
+	case Knight: figs.knights ^= flip
+	case Rook: figs.rooks ^= flip
+	case Queen: figs.queens ^= flip
+	case King:
+
+		if team == White && from == e1 {
+			switch to {
+			case g1: figs.rooks ^= h1 | f1
+			case c1: figs.rooks ^= a1 | d1
+			}
+			b.flags &= notWhiteCastling
+		} else if from == e8 {
+			switch to {
+			case g8: figs.rooks ^= h8 | f8
+			case c8: figs.rooks ^= a8 | d8
+			}
+			b.flags &= notBlackCastling
+		}
+
+		figs.king ^= flip
+	}
+
+	b.updateAll()
 }
 
 
 func (b *Board) undo() {
-	m := b.popHistory()
+	b.historyLen -= 1
+	m := b.history[b.historyLen]
 
 	from := m.from
 	to := m.to
@@ -123,7 +155,6 @@ func (b *Board) undo() {
 
 	switch t {
 	case Pawn:
-
 		if to & (rank1 | rank8) != 0 {
 			figs.queens &= ^to
 			figs.pawns |= from
@@ -167,69 +198,6 @@ func (b *Board) undo() {
 }
 
 
-func (b *Board) move(from uint64, to uint64, team int, piece int) {
-	eatenPieceType := b.GetPieceType(to)
-
-	flip := from | to
-
-	m := Move {
-		from: from, to: to,
-		team: team,
-		eatenPiece: eatenPieceType,
-		movingPiece: piece,
-		oldFlags: b.flags,
-	}
-
-	b.pushHistory(m)
-
-	if eatenPieceType != Empty {
-		b.removePiece(to)
-	}
-
-	figs := b.getBitboard(team)
-
-	if from == h1 || to == h1 { b.flags &= ^whiteShortCastling }
-	if from == a1 || to == a1 { b.flags &= ^whiteLongCastling }
-	if from == h8 || to == h8 { b.flags &= ^blackShortCastling }
-	if from == a8 || to == a8 { b.flags &= ^blackLongCastling }
-
-	switch piece {
-	case Pawn:
-
-		if to & ( rank1 | rank8 ) != 0 {
-			figs.pawns &= ^from
-			figs.queens |= to
-		} else {
-			figs.pawns ^= flip
-		}
-
-	case Bishop: figs.bishops ^= flip
-	case Knight: figs.knights ^= flip
-	case Rook: figs.rooks ^= flip
-	case Queen: figs.queens ^= flip
-	case King:
-
-		if team == White && from == e1 {
-			switch to {
-			case g1: figs.rooks ^= h1 | f1
-			case c1: figs.rooks ^= a1 | d1
-			}
-			b.flags &= notWhiteCastling
-		} else if from == e8 {
-			switch to {
-			case g8: figs.rooks ^= h8 | f8
-			case c8: figs.rooks ^= a8 | d8
-			}
-			b.flags &= notBlackCastling
-		}
-
-		figs.king ^= flip
-	}
-
-	b.updateAll()
-}
-
-
 func (b *Board) checkGameStatus(team int) int {
 	kingPos := b.getKing(team)
 	inCheck := b.isChecked(kingPos, team)
@@ -245,7 +213,7 @@ func (b *Board) checkGameStatus(team int) int {
 		bitsLeft := pieceBoards[i]
 		for bitsLeft != 0 {
 			p := bitsLeft & -bitsLeft
-			if b.GetLegalMoves(p, team, pieceTypes[i]) != 0 {
+			if b.getLegalMoves(p, team, pieceTypes[i]) != 0 {
 				hasMoves = true
 				break
 			}

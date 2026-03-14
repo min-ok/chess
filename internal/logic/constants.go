@@ -27,6 +27,16 @@ const (
 
 
 const (
+	pawnCost = 1000
+	bishopCost = 3000
+	knightCost = 4000
+	rookCost = 5000
+	queenCost = 9000
+	kingCost = 1000000
+)
+
+
+const (
 	whiteShortCastling uint8 = 0x01
 	whiteLongCastling uint8 = 0x02
 	blackShortCastling uint8 = 0x04

@@ -19,7 +19,7 @@ func (g *Game) drawTextScreen(t string) {
 
 	face := &text.GoTextFace{
 		Source: g.FaceSource,
-		Size: 72,
+		Size: 24 * float64(g.scale),
 	}
 
 	w, h := text.Measure(t, face, op.LineSpacing)
@@ -60,7 +60,7 @@ func (g *Game) drawFigures() {
 func (g *Game) drawPointers() {
 	pm := g.possibleMoves
 
-	enemy := g.board.GetEnemyFigures(g.pointer)
+	enemy := g.board.GetPlayerEnemyFigures(g.pointer)
 
 	op := &ebiten.DrawImageOptions{}
 	for pm != 0 {

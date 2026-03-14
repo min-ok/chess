@@ -81,12 +81,12 @@ func setDimensions(g *Game) {
 
 func Start() {
 	g := &Game{}
-	ebiten.SetWindowSize(176 * 5, 176 * 5)
+	g.scale = 3
+
+	ebiten.SetWindowSize(176 * g.scale, 176 * g.scale)
 	ebiten.SetWindowTitle("Chess")
-	g.scale = 5
 
 	g.boardMargin = 8 * g.scale
-
 
 	loadImages(g)
 	loadFont(g)

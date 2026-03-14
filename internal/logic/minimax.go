@@ -3,15 +3,53 @@ package logic
 import (
 	// "sort"
 	"math"
+	"math/bits"
 )
 
 
 const MaxDepth = 64
-const MaxMovesPerPosition = 218 // максимум возможных ходов в шахматах
+const MaxMovesPerPosition = 218
 
 type MoveList struct {
 	moves [MaxDepth][MaxMovesPerPosition]Move
 	sizes [MaxDepth]int
+}
+
+
+func (b *Board)GetBestMove(depth int, team int) Move {
+	ml := &MoveList{}
+
+	b.getMoves(ml, depth, team)
+
+	alpha := math.MinInt + 1
+	beta := math.MaxInt
+
+	var res Move
+	best := math.MinInt + 1
+
+	for i := 0; i < ml.sizes[depth]; i++ {
+		m := ml.moves[depth][i]
+
+		b.move(m.from, m.to, m.team, m.movingPiece)
+
+		if b.isChecked(b.getKing(team), team) {
+			b.undo()
+			continue
+		}
+
+		score := -b.alphaBeta(ml, depth - 1, -beta, -alpha, getOppositeTeam(team))
+		b.undo()
+
+		if score > best {
+			best = score
+			res = m
+			if score > alpha {
+				alpha = score
+			}
+		}
+	}
+
+	return res
 }
 
 
@@ -54,42 +92,6 @@ func (b *Board) alphaBeta(ml *MoveList, depth int, alpha, beta int, team int) in
 	return alpha
 }
 
-
-func (b *Board)GetBestMove(depth int, team int) Move {
-	ml := &MoveList{}
-
-	b.getMoves(ml, depth, team)
-
-	alpha := math.MinInt + 1
-	beta := math.MaxInt
-
-	var res Move
-	best := math.MinInt + 1
-
-	for i := 0; i < ml.sizes[depth]; i++ {
-		m := ml.moves[depth][i]
-
-		b.move(m.from, m.to, m.team, m.movingPiece)
-
-		if b.isChecked(b.getKing(team), team) {
-			b.undo()
-			continue
-		}
-
-		score := -b.alphaBeta(ml, depth - 1, -beta, -alpha, getOppositeTeam(team))
-		b.undo()
-
-		if score > best {
-			best = score
-			res = m
-			if score > alpha {
-				alpha = score
-			}
-		}
-	}
-
-	return res
-}
 
 
 func (b *Board)IsTerminated() bool {
@@ -135,4 +137,16 @@ func (b *Board) getMoves(ml *MoveList, depth int, team int) {
 			fromBb &= fromBb - 1
 		}
 	}
+}
+
+
+func (b *Board) Evaluate() int {
+	sum := ( bits.OnesCount64(b.whiteFigures.pawns) - bits.OnesCount64(b.blackFigures.pawns) ) * pawnCost
+	sum += ( bits.OnesCount64(b.whiteFigures.bishops) - bits.OnesCount64(b.blackFigures.bishops) ) * bishopCost
+	sum += ( bits.OnesCount64(b.whiteFigures.knights) - bits.OnesCount64(b.blackFigures.knights) ) * knightCost
+	sum += ( bits.OnesCount64(b.whiteFigures.rooks) - bits.OnesCount64(b.blackFigures.rooks) ) * rookCost
+	sum += ( bits.OnesCount64(b.whiteFigures.queens) - bits.OnesCount64(b.blackFigures.queens) ) * queenCost
+	sum += ( bits.OnesCount64(b.whiteFigures.king) - bits.OnesCount64(b.blackFigures.king) ) * kingCost
+
+	return sum
 }
