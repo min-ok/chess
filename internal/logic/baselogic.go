@@ -3,6 +3,9 @@ package logic
 // Здесь функции, которые напрямую работают с Board, это низкие функции, достаточно тупые функции
 // Написаны просто перебором значений для скорости
 
+import "math/bits"
+
+
 type Bitboard struct {
 	pawns uint64
 	bishops uint64
@@ -19,12 +22,26 @@ type Board struct {
 	blackFigures Bitboard
 	occupied uint64
 
-	whiteLongCastling bool
-	whiteShortCastling bool
-	blackLongCastling bool
-	blackShortCastling bool
+	flags uint8
 
 	turn int
+
+	history [2048]Move
+	historyLen int
+}
+
+
+type Move struct {
+	from uint64
+	to uint64
+
+
+	team int
+
+	oldFlags uint8
+
+	eatenPiece int
+	movingPiece int
 }
 
 
@@ -43,14 +60,11 @@ func (b *Board) arrangeFigures() {
 	b.blackFigures.queens = 0x0800000000000000
 	b.blackFigures.king = 0x1000000000000000
 
-	b.whiteLongCastling = true
-	b.whiteShortCastling = true
-	b.blackLongCastling = true
-	b.blackShortCastling = true
+	b.flags = 0x0F
 }
 
 
-func (b *Board) getPieceType(p uint64) int {
+func (b *Board) GetPieceType(p uint64) int {
 	if (b.whiteFigures.pawns | b.blackFigures.pawns) & p != 0 { return Pawn }
 	if (b.whiteFigures.bishops | b.blackFigures.bishops) & p != 0 { return Bishop }
 	if (b.whiteFigures.knights | b.blackFigures.knights) & p != 0 { return Knight }
@@ -58,11 +72,11 @@ func (b *Board) getPieceType(p uint64) int {
 	if (b.whiteFigures.queens | b.blackFigures.queens) & p != 0 { return Queen }
 	if (b.whiteFigures.king | b.blackFigures.king) & p != 0 { return King }
 
-	panic("not such type (getPieceType)")
+	return Empty
 }
 
 
-func (b *Board) getPieceTeam(p uint64) int {
+func (b *Board) GetPieceTeam(p uint64) int {
 	if b.whiteFigures.all & p != 0 {
 		return White
 	}
@@ -148,4 +162,38 @@ func (b *Board) GetFigures() [2][6]uint64 {
 	res[Black][King] = b.blackFigures.king
 
 	return res
+}
+
+
+const (
+	PawnCost = 1000
+	BishopCost = 3000
+	KnightCost = 4000
+	RookCost = 5000
+	QueenCost = 9000
+	KingCost = 1000000
+)
+
+
+func (b *Board) Evaluate() int {
+	sum := ( bits.OnesCount64(b.whiteFigures.pawns) - bits.OnesCount64(b.blackFigures.pawns) ) * PawnCost
+	sum += ( bits.OnesCount64(b.whiteFigures.bishops) - bits.OnesCount64(b.blackFigures.bishops) ) * BishopCost
+	sum += ( bits.OnesCount64(b.whiteFigures.knights) - bits.OnesCount64(b.blackFigures.knights) ) * KnightCost
+	sum += ( bits.OnesCount64(b.whiteFigures.rooks) - bits.OnesCount64(b.blackFigures.rooks) ) * RookCost
+	sum += ( bits.OnesCount64(b.whiteFigures.queens) - bits.OnesCount64(b.blackFigures.queens) ) * QueenCost
+	sum += ( bits.OnesCount64(b.whiteFigures.king) - bits.OnesCount64(b.blackFigures.king) ) * KingCost
+
+
+	return sum
+}
+
+
+func (b *Board) pushHistory(m Move) {
+	b.history[b.historyLen] = m
+	b.historyLen += 1
+}
+
+func (b *Board) popHistory() Move {
+	b.historyLen -= 1
+	return b.history[b.historyLen]
 }

@@ -30,9 +30,9 @@ type Game struct {
 	boardSizeX, boardSizeY int
 	cellSizeX, cellSizeY int
 
-	gameended bool
-
 	scale int
+
+	gameended bool
 }
 
 
@@ -56,6 +56,8 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.updateScreen()
+	// op := &ebiten.DrawImageOptions{}
+	// op.GeoM.Scale(2, 2)
 
 	screen.DrawImage(g.screenImg, nil)
 }
@@ -79,9 +81,9 @@ func setDimensions(g *Game) {
 
 func Start() {
 	g := &Game{}
-	ebiten.SetWindowSize(176 * 3, 176 * 3)
+	ebiten.SetWindowSize(176 * 5, 176 * 5)
 	ebiten.SetWindowTitle("Chess")
-	g.scale = 3
+	g.scale = 5
 
 	g.boardMargin = 8 * g.scale
 

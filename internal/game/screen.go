@@ -17,19 +17,19 @@ func (g *Game) drawTextScreen(t string) {
 
 	op := &text.DrawOptions{}
 
-    face := &text.GoTextFace{
-        Source: g.FaceSource,
-        Size: 72,
-    }
+	face := &text.GoTextFace{
+		Source: g.FaceSource,
+		Size: 72,
+	}
 
-    w, h := text.Measure(t, face, op.LineSpacing)
-    x := (float64(g.boardSizeX) - w) / 2
-    y := (float64(g.boardSizeY) - h) / 2
+	w, h := text.Measure(t, face, op.LineSpacing)
+	x := (float64(g.boardSizeX) - w) / 2
+	y := (float64(g.boardSizeY) - h) / 2
 
-    op.GeoM.Translate(math.Floor(x), math.Floor(y))
-    op.ColorScale.ScaleWithColor(color.White)
+	op.GeoM.Translate(math.Floor(x), math.Floor(y))
+	op.ColorScale.ScaleWithColor(color.White)
 
-    text.Draw(g.screenState, t, face, op)
+	text.Draw(g.screenState, t, face, op)
 }
 
 

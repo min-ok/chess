@@ -5,33 +5,31 @@ import (
 )
 
 
-func (b *Board) getPawnSquaresAttacked(p uint64) uint64 {
+func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 	var moves uint64
 
-	t := b.getPieceTeam(p)
-	if t == -1 { panic(t) }
 
-	if (t == White) {
-		moves |= (p << 7) & b.blackFigures.all & NotH
-	 	moves |= (p << 9) & b.blackFigures.all & NotA
+	if (team == White) {
+		moves |= (p << 7) & b.blackFigures.all & notH
+	 	moves |= (p << 9) & b.blackFigures.all & notA
 
 		step := p << 8
 		if step & b.occupied == 0 {
 			moves |= step
-			if p & Rank2 != 0 {
+			if p & rank2 != 0 {
 				step = p << 16
 				if step & b.occupied == 0 { moves |= step }
 			}
 		}
 	} else {
-		moves |= (p >> 7) & b.whiteFigures.all & NotA
-	 	moves |= (p >> 9) & b.whiteFigures.all & NotH
+		moves |= (p >> 7) & b.whiteFigures.all & notA
+	 	moves |= (p >> 9) & b.whiteFigures.all & notH
 
 		step := p >> 8
 		if step & b.occupied == 0 {
 			moves |= step
 
-			if p & Rank7 != 0 {
+			if p & rank7 != 0 {
 				step = p >> 16
 				if step & b.occupied == 0 { moves |= step }
 			}
@@ -45,10 +43,10 @@ func (b *Board) getPawnSquaresAttacked(p uint64) uint64 {
 func (b *Board) getBishopSquaresAttacked(p uint64) uint64 {
 	var moves uint64
 
-	moves |= b.ray(p, 9, 0, NotH)
-	moves |= b.ray(p, 7, 0, NotA)
-	moves |= b.ray(p, 0, 7, NotH)
-	moves |= b.ray(p, 0, 9, NotA)
+	moves |= b.ray(p, 9, 0, notH)
+	moves |= b.ray(p, 7, 0, notA)
+	moves |= b.ray(p, 0, 7, notH)
+	moves |= b.ray(p, 0, 9, notA)
 
 	return moves
 }
@@ -57,15 +55,15 @@ func (b *Board) getBishopSquaresAttacked(p uint64) uint64 {
 func (b *Board) getKnightSquaresAttacked(p uint64) uint64 {
 	var moves uint64
 
-	moves |= (p << 17) & NotA
-	moves |= (p << 15) & NotH
-	moves |= (p << 10) & NotAB
-	moves |= (p << 6) & NotHG
+	moves |= (p << 17) & notA
+	moves |= (p << 15) & notH
+	moves |= (p << 10) & notAB
+	moves |= (p << 6) & notHG
 
-	moves |= (p >> 15) & NotA
-	moves |= (p >> 17) & NotH
-	moves |= (p >> 6) & NotAB
-	moves |= (p >> 10) & NotHG
+	moves |= (p >> 15) & notA
+	moves |= (p >> 17) & notH
+	moves |= (p >> 6) & notAB
+	moves |= (p >> 10) & notHG
 
 	return moves
 }
@@ -76,8 +74,8 @@ func (b *Board) getRookSquaresAttacked(p uint64) uint64 {
 
 	moves |= b.ray(p, 8, 0, 0)
 	moves |= b.ray(p, 0, 8, 0)
-	moves |= b.ray(p, 0, 1, NotA)
-	moves |= b.ray(p, 1, 0, NotH)
+	moves |= b.ray(p, 0, 1, notA)
+	moves |= b.ray(p, 1, 0, notH)
 
 	return moves
 }
@@ -91,39 +89,38 @@ func (b *Board) getQueenSquaresAttacked(p uint64) uint64 {
 func (b *Board) getKingSquaresAttacked(p uint64) uint64 {
 	var moves uint64
 
-	moves |= (p << 1) & NotA
-	moves |= (p >> 1) & NotH
+	moves |= (p << 1) & notA
+	moves |= (p >> 1) & notH
 
 	moves |= (p << 8)
 	moves |= (p >> 8)
 
-	moves |= (p << 7) & NotH
-	moves |= (p << 9) & NotA
+	moves |= (p << 7) & notH
+	moves |= (p << 9) & notA
 
-	moves |= (p >> 7) & NotA
-	moves |= (p >> 9) & NotH
+	moves |= (p >> 7) & notA
+	moves |= (p >> 9) & notH
 
 	return moves
 }
 
 
-func (b *Board) getCastling(p uint64) uint64 {
+func (b *Board) getCastling(p uint64, team int) uint64 {
 	var res uint64
-	team := b.getPieceTeam(p)
 
 	if team == White {
-		if b.whiteShortCastling && (b.occupied & WhiteShortEmptyCells) == 0 && b.isPathSafe(WhiteShortSafeCells, White) {
-			res |= G1
+		if b.flags & whiteShortCastling != 0 && (b.occupied & whiteShortEmptyCells) == 0 && b.isPathSafe(whiteShortSafeCells, White) {
+			res |= g1
 		}
-		if b.whiteLongCastling && (b.occupied&WhiteLongEmptyCells) == 0 && b.isPathSafe(WhiteLongSafeCells, White) {
-				res |= C1
+		if b.flags & whiteLongCastling != 0 && (b.occupied & whiteLongEmptyCells) == 0 && b.isPathSafe(whiteLongSafeCells, White) {
+			res |= c1
 		}
 	} else {
-		if b.blackShortCastling && (b.occupied&BlackShortEmptyCells) == 0 && b.isPathSafe(BlackShortSafeCells, Black) {
-			res |= G8
+		if b.flags & blackShortCastling != 0 && (b.occupied & blackShortEmptyCells) == 0 && b.isPathSafe(blackShortSafeCells, Black) {
+			res |= g8
 		}
-		if b.blackLongCastling && (b.occupied&BlackLongEmptyCells) == 0 && b.isPathSafe(BlackLongSafeCells, Black) {
-			res |= C8
+		if b.flags & blackLongCastling != 0 && (b.occupied & blackLongEmptyCells) == 0 && b.isPathSafe(blackLongSafeCells, Black) {
+			res |= c8
 		}
 	}
 
@@ -160,5 +157,6 @@ func (b *Board) ray(p uint64, shift1 uint64, shift2 uint64, mask uint64) uint64 
 
 		if curr & b.occupied != 0 { break }
 	}
+
 	return res
 }

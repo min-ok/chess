@@ -40,15 +40,15 @@ func loadImages(g *Game) {
 
 
 func loadFont(g *Game)  {
-    fontData, err := os.ReadFile("internal/assets/Jersey10-Regular.ttf")
-    if err != nil {
-    	panic("cant load font")
-    }
+	fontData, err := os.ReadFile("internal/assets/Jersey10-Regular.ttf")
+	if err != nil {
+		panic("cant load font")
+	}
 
-    s, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
-    if err != nil {
-    	panic("cant load font")
-    }
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(fontData))
+	if err != nil {
+		panic("cant load font")
+	}
 
-    g.FaceSource = s
+	g.FaceSource = s
 }

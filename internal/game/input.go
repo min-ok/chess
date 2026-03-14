@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"chess/internal/logic"
+	// "math/bits"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,6 +22,11 @@ func intToTeamString(team int) string {
 
 	return ""
 }
+
+
+
+
+
 
 
 func (g *Game) Input() {
@@ -54,7 +60,9 @@ func (g *Game) Input() {
 				g.gameended = true
 			}
 
+			// bestMove := g.board.GetBestMove(7, false)
 
+			// g.board.Move(bestMove)
 
 			g.resetPointer()
 			g.resetPossibleMoves()
@@ -62,7 +70,11 @@ func (g *Game) Input() {
 		} else {
 			g.pointer = p
 
-			g.possibleMoves = g.board.GetLegalMoves(g.pointer)
+			g.possibleMoves = g.board.GetLegalMoves(g.pointer, g.board.GetPieceTeam(g.pointer), g.board.GetPieceType(g.pointer))
 		}
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		g.board.MakePlayerUndo()
 	}
 }
