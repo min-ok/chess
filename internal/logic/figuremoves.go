@@ -8,7 +8,6 @@ import (
 func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 	var moves uint64
 
-
 	if (team == White) {
 		moves |= (p << 7) & b.teamOccupied[Black] & notH
 	 	moves |= (p << 9) & b.teamOccupied[Black] & notA
@@ -35,8 +34,6 @@ func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 			}
 		}
 	}
-
-	// fmt.Println(b.teamOccupied, moves)
 
 	return moves
 }
@@ -107,17 +104,19 @@ func (b *Board) getKingSquaresAttacked(p uint64) uint64 {
 }
 
 
-func (b *Board) getCastling(p uint64, team int) uint64 {
+func (b *Board) getCastling(team int) uint64 {
 	var res uint64
 
-	if team == White {
+	kingPos := b.bitboard[team][King]
+
+	if team == White && kingPos == e1 {
 		if b.flags & whiteShortCastling != 0 && (b.allOccupied & whiteShortEmptyCells) == 0 && b.isPathSafe(whiteShortSafeCells, White) {
 			res |= g1
 		}
 		if b.flags & whiteLongCastling != 0 && (b.allOccupied & whiteLongEmptyCells) == 0 && b.isPathSafe(whiteLongSafeCells, White) {
 			res |= c1
 		}
-	} else {
+	} else if team == Black && kingPos == e8 {
 		if b.flags & blackShortCastling != 0 && (b.allOccupied & blackShortEmptyCells) == 0 && b.isPathSafe(blackShortSafeCells, Black) {
 			res |= g8
 		}

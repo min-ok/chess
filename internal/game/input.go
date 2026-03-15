@@ -24,6 +24,20 @@ func intToTeamString(team int) string {
 
 
 
+func (g *Game) screenMenu(s int, t int) {
+	switch s {
+		case logic.None: g.drawTextScreen("")
+		case logic.Check: g.drawTextScreen(fmt.Sprintf("Check to %s", intToTeamString(t)))
+		case logic.Checkmate:
+		g.drawTextScreen(fmt.Sprintf("Checkmate to %s", intToTeamString(t)))
+		g.gameended = true
+		case logic.Draw:
+		g.drawTextScreen("Draw")
+		g.gameended = true
+	}
+}
+
+
 func (g *Game) Input() {
 	if g.gameended {
 		return
@@ -43,17 +57,10 @@ func (g *Game) Input() {
 
 		if g.possibleMoves & p != 0 {
 			s, t := g.board.MakePlayerMove(g.pointer, p)
+			g.screenMenu(s, t)
 
-			switch s {
-				case logic.None: g.drawTextScreen("")
-				case logic.Check: g.drawTextScreen(fmt.Sprintf("Check to %s", intToTeamString(t)))
-				case logic.Checkmate:
-				g.drawTextScreen(fmt.Sprintf("Checkmate to %s", intToTeamString(t)))
-				g.gameended = true
-				case logic.Draw:
-				g.drawTextScreen("Draw")
-				g.gameended = true
-			}
+			s, t = g.board.MakeBotMove()
+			g.screenMenu(s, t)
 
 			g.resetPointer()
 			g.resetPossibleMoves()

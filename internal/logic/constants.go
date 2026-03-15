@@ -2,7 +2,7 @@ package logic
 
 
 const (
-	botDepth = 1
+	botDepth = 5
 )
 
 
@@ -24,6 +24,7 @@ const (
 
 
 var pieceTypes = [6]int{Pawn, Bishop, Knight, Rook, Queen, King}
+var pieceCost = [6]int{100, 300, 400, 500, 900, 10000}
 
 
 const (
@@ -31,16 +32,6 @@ const (
 	Check = 1
 	Checkmate = 2
 	Draw = 3
-)
-
-
-const (
-	pawnCost = 1000
-	bishopCost = 3000
-	knightCost = 4000
-	rookCost = 5000
-	queenCost = 9000
-	kingCost = 1000000
 )
 
 

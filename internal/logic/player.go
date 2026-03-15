@@ -15,11 +15,17 @@ func (b *Board) MakePlayerMove(from, to uint64) (int, int) {
 	b.move(from, to, b.getPieceType(from), b.getPieceType(to), b.turn)
 	b.turn = getOppositeTeam(b.turn)
 
-	// panic(fmt.Sprintf("%d %d", b.turn, b.turn))
+	return b.checkGameStatus(b.turn), b.turn
+}
 
-	// bestMove := b.GetBestMove(botDepth, b.turn)
-	// b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
-	// b.turn = getOppositeTeam(b.turn)
+
+func (b *Board) MakeBotMove() (int, int) {
+	bestMove := b.getBestMove(botDepth, b.turn)
+
+	if bestMove.from != 0 {
+		b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
+		b.turn = getOppositeTeam(b.turn)
+	}
 
 	return b.checkGameStatus(b.turn), b.turn
 }

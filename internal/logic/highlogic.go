@@ -11,6 +11,9 @@ import (
 // (если после PossibleMove свой король под шахом, то такой ход запрещен)
 
 
+
+
+
 func CreateBoard() *Board {
 	b := &Board{}
 
@@ -30,7 +33,7 @@ func (b *Board) getPossibleMoves(p uint64, piece int, team int) uint64 {
 	case Knight: return b.getKnightSquaresAttacked(p) & ^friendlyPiece
 	case Rook: return b.getRookSquaresAttacked(p) & ^friendlyPiece
 	case Queen: return b.getQueenSquaresAttacked(p) & ^friendlyPiece
-	case King: return ( b.getKingSquaresAttacked(p) | b.getCastling(p, team) ) & ^friendlyPiece
+	case King: return ( b.getKingSquaresAttacked(p) | b.getCastling(team) ) & ^friendlyPiece
 	}
 
 	return 0
@@ -109,7 +112,7 @@ func (b *Board) move(from uint64, to uint64, fromPieceType, toPieceType int, tea
 			case c1: bbt[Rook] ^= a1 | d1
 			}
 			b.flags &= notWhiteCastling
-		} else if from == e8 {
+		} else if team == Black && from == e8 {
 			switch to {
 			case g8: bbt[Rook] ^= h8 | f8
 			case c8: bbt[Rook] ^= a8 | d8
@@ -130,55 +133,40 @@ func (b *Board) undo() {
 	b.historyLen -= 1
 	m := b.history[b.historyLen]
 
-	from := m.from
-	to := m.to
+	flip := m.from | m.to
 
-	flip := from | to
+	bbt := &b.bitboard[m.team]
 
-	t := m.movingPiece
-	team := m.team
-
-	figs := &b.bitboard[team]
-
-	figs2 := &b.bitboard[getOppositeTeam(team)]
-
-	switch t {
+	switch m.movingPiece {
 	case Pawn:
-		if to & (rank1 | rank8) != 0 {
-			figs[Queen] &= ^to
-			figs[Pawn] |= from
+		if m.to & (rank1 | rank8) != 0 {
+			bbt[Queen] &= ^m.to
+			bbt[Pawn] |= m.from
 		} else {
-			figs[Pawn] ^= flip
+			bbt[Pawn] ^= flip
 		}
-
-	case Bishop: figs[Bishop] ^= flip
-	case Knight: figs[Knight] ^= flip
-	case Rook: figs[Rook] ^= flip
-	case Queen: figs[Queen] ^= flip
 
 	case King:
-		if team == White && from == e1 {
-			switch to {
-			case g1: figs[Rook] ^= h1 | f1
-			case c1: figs[Rook] ^= a1 | d1
+		if m.team == White && m.from == e1 {
+			switch m.to {
+			case g1: bbt[Rook] ^= h1 | f1
+			case c1: bbt[Rook] ^= a1 | d1
 			}
-		} else if from == e8 {
-			switch to {
-			case g8: figs[Rook] ^= h8 | f8
-			case c8: figs[Rook] ^= a8 | d8
+		} else if m.team == Black && m.from == e8 {
+			switch m.to {
+			case g8: bbt[Rook] ^= h8 | f8
+			case c8: bbt[Rook] ^= a8 | d8
 			}
 		}
 
-		figs[King] ^= flip
+		bbt[King] ^= flip
+
+		default:
+			bbt[m.movingPiece] ^= flip
 	}
 
-	switch m.eatenPiece {
-		case Empty: break
-		case Pawn: figs2[Pawn] |= to
-		case Bishop: figs2[Bishop] |= to
-		case Knight: figs2[Knight] |= to
-		case Rook: figs2[Rook] |= to
-		case Queen: figs2[Queen] |= to
+	if m.eatenPiece != Empty {
+		b.bitboard[getOppositeTeam(m.team)][m.eatenPiece] |= m.to
 	}
 
 	b.flags = m.oldFlags
@@ -188,10 +176,6 @@ func (b *Board) undo() {
 
 
 func (b *Board) checkGameStatus(team int) int {
-	kingPos := b.bitboard[team][King]
-
-	inCheck := b.isChecked(kingPos, team)
-
 	hasMoves := false
 
 	for i := 0; i < 6 && !hasMoves; i++ {
@@ -206,7 +190,7 @@ func (b *Board) checkGameStatus(team int) int {
 		}
 	}
 
-	if inCheck {
+	if b.isChecked(b.bitboard[team][King], team) {
 		if !hasMoves {
 			return Checkmate
 		} else {

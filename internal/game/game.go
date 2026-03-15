@@ -91,6 +91,8 @@ func Start() {
 	setDimensions(g)
 
 	g.board = logic.CreateBoard()
+	// g.board.MakeBotMove()
+
 	g.screenImg = ebiten.NewImage(g.boardSizeX, g.boardSizeY)
 	g.screenState = ebiten.NewImage(g.boardSizeX, g.boardSizeY)
 
