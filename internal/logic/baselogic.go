@@ -18,6 +18,8 @@ type Bitboard struct {
 type Board struct {
 	whiteFigures Bitboard
 	blackFigures Bitboard
+
+
 	occupied uint64
 
 	flags uint8
@@ -62,7 +64,7 @@ func (b *Board) arrangeFigures() {
 }
 
 
-func (b *Board) GetPieceType(p uint64) int {
+func (b *Board) getPieceType(p uint64) int {
 	if (b.whiteFigures.pawns | b.blackFigures.pawns) & p != 0 { return Pawn }
 	if (b.whiteFigures.bishops | b.blackFigures.bishops) & p != 0 { return Bishop }
 	if (b.whiteFigures.knights | b.blackFigures.knights) & p != 0 { return Knight }
@@ -74,7 +76,7 @@ func (b *Board) GetPieceType(p uint64) int {
 }
 
 
-func (b *Board) GetPieceTeam(p uint64) int {
+func (b *Board) getPieceTeam(p uint64) int {
 	if b.whiteFigures.all & p != 0 {
 		return White
 	}

@@ -56,8 +56,6 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.updateScreen()
-	// op := &ebiten.DrawImageOptions{}
-	// op.GeoM.Scale(2, 2)
 
 	screen.DrawImage(g.screenImg, nil)
 }

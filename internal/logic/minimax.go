@@ -1,10 +1,34 @@
 package logic
 
 import (
-	// "sort"
 	"math"
 	"math/bits"
 )
+
+
+func (ml *MoveList) sortMoves(depth int) {
+    size := ml.sizes[depth]
+    for i := 1; i < size; i++ {
+        key := ml.moves[depth][i]
+        keyScore := moveScore(key)
+        j := i - 1
+        for j >= 0 && moveScore(ml.moves[depth][j]) < keyScore {
+            ml.moves[depth][j + 1] = ml.moves[depth][j]
+            j--
+        }
+        ml.moves[depth][j+1] = key
+    }
+}
+
+var pieceValue = [7]int{0, 100, 330, 320, 500, 900, 20000}
+
+func moveScore(m Move) int {
+    if m.eatenPiece == Empty {
+        return 0
+    }
+
+    return pieceValue[m.eatenPiece] - pieceValue[m.movingPiece]
+}
 
 
 const MaxDepth = 64
@@ -30,7 +54,7 @@ func (b *Board)GetBestMove(depth int, team int) Move {
 	for i := 0; i < ml.sizes[depth]; i++ {
 		m := ml.moves[depth][i]
 
-		b.move(m.from, m.to, m.team, m.movingPiece)
+		b.move(m.from, m.to, m.movingPiece, m.eatenPiece, m.team)
 
 		if b.isChecked(b.getKing(team), team) {
 			b.undo()
@@ -55,7 +79,7 @@ func (b *Board)GetBestMove(depth int, team int) Move {
 
 func (b *Board) alphaBeta(ml *MoveList, depth int, alpha, beta int, team int) int {
 	if depth == 0 {
-		return b.Evaluate()
+		return b.evaluate()
 	}
 
 	b.getMoves(ml, depth, team)
@@ -70,7 +94,7 @@ func (b *Board) alphaBeta(ml *MoveList, depth int, alpha, beta int, team int) in
 	for i := 0; i < ml.sizes[depth]; i++ {
 		m := ml.moves[depth][i]
 
-		b.move(m.from, m.to, m.team, m.movingPiece)
+		b.move(m.from, m.to, m.movingPiece, m.eatenPiece, m.team)
 
 		if b.isChecked(b.getKing(team), team) {
 			b.undo()
@@ -93,14 +117,6 @@ func (b *Board) alphaBeta(ml *MoveList, depth int, alpha, beta int, team int) in
 }
 
 
-
-func (b *Board)IsTerminated() bool {
-	 s := b.checkGameStatus(b.turn)
-
-	return s == Checkmate || s == Draw
-}
-
-
 func (b *Board) getMoves(ml *MoveList, depth int, team int) {
 	ml.sizes[depth] = 0
 	bb := b.getBitboard(team)
@@ -114,7 +130,7 @@ func (b *Board) getMoves(ml *MoveList, depth int, team int) {
 		for fromBb != 0 {
 			from := fromBb & -fromBb
 
-			toBb := b.getPossibleMoves(from, team, pieceTypes[i])
+			toBb := b.getPossibleMoves(from, pieceTypes[i], team)
 
 			for toBb != 0 {
 				to := toBb & -toBb
@@ -123,7 +139,7 @@ func (b *Board) getMoves(ml *MoveList, depth int, team int) {
 					from: from, to: to,
 					team: team,
 					movingPiece: pieceTypes[i],
-					eatenPiece: b.GetPieceType(to),
+					eatenPiece: b.getPieceType(to),
 
 					oldFlags: b.flags,
 				}
@@ -137,10 +153,12 @@ func (b *Board) getMoves(ml *MoveList, depth int, team int) {
 			fromBb &= fromBb - 1
 		}
 	}
+
+	ml.sortMoves(depth)
 }
 
 
-func (b *Board) Evaluate() int {
+func (b *Board) evaluate() int {
 	sum := ( bits.OnesCount64(b.whiteFigures.pawns) - bits.OnesCount64(b.blackFigures.pawns) ) * pawnCost
 	sum += ( bits.OnesCount64(b.whiteFigures.bishops) - bits.OnesCount64(b.blackFigures.bishops) ) * bishopCost
 	sum += ( bits.OnesCount64(b.whiteFigures.knights) - bits.OnesCount64(b.blackFigures.knights) ) * knightCost

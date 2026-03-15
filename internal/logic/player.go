@@ -1,20 +1,24 @@
 package logic
 
+// import "fmt"
+
 
 func (b *Board) GetPlayerEnemyFigures(p uint64) uint64 {
 	if p & b.occupied == 0 {
 		return 0
 	}
-	return b.getBitboard(getOppositeTeam(b.GetPieceTeam(p))).all
+	return b.getBitboard(getOppositeTeam(b.getPieceTeam(p))).all
 }
 
 
 func (b *Board) MakePlayerMove(from, to uint64) (int, int) {
-	b.move(from, to, b.turn, b.GetPieceType(from))
+	b.move(from, to, b.getPieceType(from), b.getPieceType(to), b.turn)
 	b.turn = getOppositeTeam(b.turn)
 
-	bestMove := b.GetBestMove(5, b.turn)
-	b.move(bestMove.from, bestMove.to, bestMove.team, bestMove.movingPiece)
+	// panic(fmt.Sprintf("%d %d", b.turn, b.turn))
+
+	bestMove := b.GetBestMove(botDepth, b.turn)
+	b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
 	b.turn = getOppositeTeam(b.turn)
 
 	return b.checkGameStatus(b.turn), b.turn
@@ -36,11 +40,11 @@ func (b *Board) GetPlayerLegalMoves(p uint64) uint64 {
 		return 0
 	}
 
-	team := b.GetPieceTeam(p)
+	team := b.getPieceTeam(p)
 
 	if team != b.turn {
 		return 0
 	}
 
-	return b.getLegalMoves(p, team, b.GetPieceType(p))
+	return b.getLegalMoves(p, b.getPieceType(p), team)
 }

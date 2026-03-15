@@ -2,6 +2,11 @@ package logic
 
 
 const (
+	botDepth = 1
+)
+
+
+const (
 	White = 0
 	Black = 1
 )
