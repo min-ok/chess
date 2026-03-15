@@ -1,13 +1,13 @@
 package logic
 
-// import "fmt"
-
 
 func (b *Board) GetPlayerEnemyFigures(p uint64) uint64 {
-	if p & b.occupied == 0 {
+	if p & b.allOccupied == 0 {
 		return 0
 	}
-	return b.getBitboard(getOppositeTeam(b.getPieceTeam(p))).all
+
+
+	return b.teamOccupied[getOppositeTeam(b.getPieceTeam(p))]
 }
 
 
@@ -17,9 +17,9 @@ func (b *Board) MakePlayerMove(from, to uint64) (int, int) {
 
 	// panic(fmt.Sprintf("%d %d", b.turn, b.turn))
 
-	bestMove := b.GetBestMove(botDepth, b.turn)
-	b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
-	b.turn = getOppositeTeam(b.turn)
+	// bestMove := b.GetBestMove(botDepth, b.turn)
+	// b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
+	// b.turn = getOppositeTeam(b.turn)
 
 	return b.checkGameStatus(b.turn), b.turn
 }
@@ -36,7 +36,7 @@ func (b *Board) MakePlayerUndo() {
 
 
 func (b *Board) GetPlayerLegalMoves(p uint64) uint64 {
-	if p & b.occupied == 0 {
+	if p & b.allOccupied == 0 {
 		return 0
 	}
 

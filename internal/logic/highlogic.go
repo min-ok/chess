@@ -1,6 +1,7 @@
 package logic
 
 import (
+	// "fmt"
 	"math/bits"
 )
 
@@ -21,7 +22,7 @@ func CreateBoard() *Board {
 
 
 func (b *Board) getPossibleMoves(p uint64, piece int, team int) uint64 {
-	friendlyPiece := b.getBitboard(team).all
+	friendlyPiece := b.teamOccupied[team]
 
 	switch piece {
 	case Pawn: return b.getPawnSquaresAttacked(p, team)
@@ -39,14 +40,7 @@ func (b *Board) getPossibleMoves(p uint64, piece int, team int) uint64 {
 func (b *Board) isMoveSafe(from, to uint64, fromPieceType int, toPieceType int, team int) bool {
 	b.move(from, to, fromPieceType, toPieceType, team)
 
-	var kingPos uint64
-	if team == White {
-		kingPos = b.whiteFigures.king
-	} else {
-		kingPos = b.blackFigures.king
-	}
-
-	res := !b.isChecked(kingPos, team)
+	res := !b.isChecked(b.bitboard[team][King], team)
 
 	b.undo()
 
@@ -76,8 +70,6 @@ func (b *Board) getLegalMoves(p uint64, piece int, team int) uint64 {
 
 
 func (b *Board) move(from uint64, to uint64, fromPieceType, toPieceType int, team int) {
-	// eatenPieceType := b.getPieceType(to)
-
 	flip := from | to
 
 	m := Move {
@@ -92,10 +84,10 @@ func (b *Board) move(from uint64, to uint64, fromPieceType, toPieceType int, tea
 	b.historyLen += 1
 
 	if toPieceType != Empty {
-		b.removePiece(to)
+		b.bitboard[getOppositeTeam(team)][toPieceType] &= ^to
 	}
 
-	figs := b.getBitboard(team)
+	bbt := &b.bitboard[team]
 
 	if from == h1 || to == h1 { b.flags &= ^whiteShortCastling }
 	if from == a1 || to == a1 { b.flags &= ^whiteLongCastling }
@@ -105,33 +97,29 @@ func (b *Board) move(from uint64, to uint64, fromPieceType, toPieceType int, tea
 	switch fromPieceType {
 	case Pawn:
 		if to & ( rank1 | rank8 ) != 0 {
-			figs.pawns &= ^from
-			figs.queens |= to
+			bbt[Pawn] &= ^from
+			bbt[Queen] |= to
 		} else {
-			figs.pawns ^= flip
+			bbt[Pawn] ^= flip
 		}
-
-	case Bishop: figs.bishops ^= flip
-	case Knight: figs.knights ^= flip
-	case Rook: figs.rooks ^= flip
-	case Queen: figs.queens ^= flip
 	case King:
-
 		if team == White && from == e1 {
 			switch to {
-			case g1: figs.rooks ^= h1 | f1
-			case c1: figs.rooks ^= a1 | d1
+			case g1: bbt[Rook] ^= h1 | f1
+			case c1: bbt[Rook] ^= a1 | d1
 			}
 			b.flags &= notWhiteCastling
 		} else if from == e8 {
 			switch to {
-			case g8: figs.rooks ^= h8 | f8
-			case c8: figs.rooks ^= a8 | d8
+			case g8: bbt[Rook] ^= h8 | f8
+			case c8: bbt[Rook] ^= a8 | d8
 			}
 			b.flags &= notBlackCastling
 		}
 
-		figs.king ^= flip
+		bbt[King] ^= flip
+	default:
+		bbt[fromPieceType] ^= flip
 	}
 
 	b.updateAll()
@@ -150,46 +138,47 @@ func (b *Board) undo() {
 	t := m.movingPiece
 	team := m.team
 
-	figs := b.getBitboard(team)
-	figs2 := b.getBitboard(getOppositeTeam(team))
+	figs := &b.bitboard[team]
+
+	figs2 := &b.bitboard[getOppositeTeam(team)]
 
 	switch t {
 	case Pawn:
 		if to & (rank1 | rank8) != 0 {
-			figs.queens &= ^to
-			figs.pawns |= from
+			figs[Queen] &= ^to
+			figs[Pawn] |= from
 		} else {
-			figs.pawns ^= flip
+			figs[Pawn] ^= flip
 		}
 
-	case Bishop: figs.bishops ^= flip
-	case Knight: figs.knights ^= flip
-	case Rook: figs.rooks ^= flip
-	case Queen: figs.queens ^= flip
+	case Bishop: figs[Bishop] ^= flip
+	case Knight: figs[Knight] ^= flip
+	case Rook: figs[Rook] ^= flip
+	case Queen: figs[Queen] ^= flip
 
 	case King:
 		if team == White && from == e1 {
 			switch to {
-			case g1: figs.rooks ^= h1 | f1
-			case c1: figs.rooks ^= a1 | d1
+			case g1: figs[Rook] ^= h1 | f1
+			case c1: figs[Rook] ^= a1 | d1
 			}
 		} else if from == e8 {
 			switch to {
-			case g8: figs.rooks ^= h8 | f8
-			case c8: figs.rooks ^= a8 | d8
+			case g8: figs[Rook] ^= h8 | f8
+			case c8: figs[Rook] ^= a8 | d8
 			}
 		}
 
-		figs.king ^= flip
+		figs[King] ^= flip
 	}
 
 	switch m.eatenPiece {
 		case Empty: break
-		case Pawn: figs2.pawns |= to
-		case Bishop: figs2.bishops |= to
-		case Knight: figs2.knights |= to
-		case Rook: figs2.rooks |= to
-		case Queen: figs2.queens |= to
+		case Pawn: figs2[Pawn] |= to
+		case Bishop: figs2[Bishop] |= to
+		case Knight: figs2[Knight] |= to
+		case Rook: figs2[Rook] |= to
+		case Queen: figs2[Queen] |= to
 	}
 
 	b.flags = m.oldFlags
@@ -199,18 +188,14 @@ func (b *Board) undo() {
 
 
 func (b *Board) checkGameStatus(team int) int {
-	kingPos := b.getKing(team)
+	kingPos := b.bitboard[team][King]
+
 	inCheck := b.isChecked(kingPos, team)
 
 	hasMoves := false
 
-	bb := b.getBitboard(team)
-
-	pieceBoards := [6]uint64{bb.pawns, bb.bishops, bb.knights, bb.rooks, bb.queens, bb.king}
-	pieceTypes := [6]int{Pawn, Bishop, Knight, Rook, Queen, King}
-
 	for i := 0; i < 6 && !hasMoves; i++ {
-		bitsLeft := pieceBoards[i]
+		bitsLeft := b.bitboard[team][i]
 		for bitsLeft != 0 {
 			p := bitsLeft & -bitsLeft
 			if b.getLegalMoves(p, pieceTypes[i], team) != 0 {
@@ -236,20 +221,20 @@ func (b *Board) checkGameStatus(team int) int {
 
 
 func (b *Board) isChecked(p uint64, team int) bool {
-	enemyBitboard := b.getBitboard(getOppositeTeam(team))
+	enemyBitboard := b.bitboard[getOppositeTeam(team)]
 
 	if team == White {
-		if (p << 7 & b.blackFigures.pawns & notH) != 0 { return true }
-		if (p << 9 & b.blackFigures.pawns & notA) != 0 { return true }
+		if (p << 7 & b.bitboard[Black][Pawn] & notH) != 0 { return true }
+		if (p << 9 & b.bitboard[Black][Pawn] & notA) != 0 { return true }
 	} else {
-		if (p >> 7 & b.whiteFigures.pawns & notA) != 0 { return true }
-		if (p >> 9 & b.whiteFigures.pawns & notH) != 0 { return true }
+		if (p >> 7 & b.bitboard[White][Pawn] & notA) != 0 { return true }
+		if (p >> 9 & b.bitboard[White][Pawn] & notH) != 0 { return true }
 	}
 
-	if (b.getBishopSquaresAttacked(p) & (enemyBitboard.bishops | enemyBitboard.queens)) != 0 { return true }
-	if (b.getKnightSquaresAttacked(p) & enemyBitboard.knights) != 0 { return true }
-	if (b.getRookSquaresAttacked(p) & (enemyBitboard.rooks | enemyBitboard.queens)) != 0 { return true }
-	if (b.getKingSquaresAttacked(p) & enemyBitboard.king) != 0 { return true }
+	if (b.getBishopSquaresAttacked(p) & (enemyBitboard[Bishop] | enemyBitboard[Queen])) != 0 { return true }
+	if (b.getKnightSquaresAttacked(p) & enemyBitboard[Knight]) != 0 { return true }
+	if (b.getRookSquaresAttacked(p) & (enemyBitboard[Rook] | enemyBitboard[Queen])) != 0 { return true }
+	if (b.getKingSquaresAttacked(p) & enemyBitboard[King]) != 0 { return true }
 
 	return false
 }

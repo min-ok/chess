@@ -23,6 +23,9 @@ const (
 )
 
 
+var pieceTypes = [6]int{Pawn, Bishop, Knight, Rook, Queen, King}
+
+
 const (
 	None = 0
 	Check = 1

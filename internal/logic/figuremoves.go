@@ -10,31 +10,33 @@ func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 
 
 	if (team == White) {
-		moves |= (p << 7) & b.blackFigures.all & notH
-	 	moves |= (p << 9) & b.blackFigures.all & notA
+		moves |= (p << 7) & b.teamOccupied[Black] & notH
+	 	moves |= (p << 9) & b.teamOccupied[Black] & notA
 
 		step := p << 8
-		if step & b.occupied == 0 {
+		if step & b.allOccupied == 0 {
 			moves |= step
 			if p & rank2 != 0 {
 				step = p << 16
-				if step & b.occupied == 0 { moves |= step }
+				if step & b.allOccupied == 0 { moves |= step }
 			}
 		}
 	} else {
-		moves |= (p >> 7) & b.whiteFigures.all & notA
-	 	moves |= (p >> 9) & b.whiteFigures.all & notH
+		moves |= (p >> 7) & b.teamOccupied[White] & notA
+	 	moves |= (p >> 9) & b.teamOccupied[White] & notH
 
 		step := p >> 8
-		if step & b.occupied == 0 {
+		if step & b.allOccupied == 0 {
 			moves |= step
 
 			if p & rank7 != 0 {
 				step = p >> 16
-				if step & b.occupied == 0 { moves |= step }
+				if step & b.allOccupied == 0 { moves |= step }
 			}
 		}
 	}
+
+	// fmt.Println(b.teamOccupied, moves)
 
 	return moves
 }
@@ -109,17 +111,17 @@ func (b *Board) getCastling(p uint64, team int) uint64 {
 	var res uint64
 
 	if team == White {
-		if b.flags & whiteShortCastling != 0 && (b.occupied & whiteShortEmptyCells) == 0 && b.isPathSafe(whiteShortSafeCells, White) {
+		if b.flags & whiteShortCastling != 0 && (b.allOccupied & whiteShortEmptyCells) == 0 && b.isPathSafe(whiteShortSafeCells, White) {
 			res |= g1
 		}
-		if b.flags & whiteLongCastling != 0 && (b.occupied & whiteLongEmptyCells) == 0 && b.isPathSafe(whiteLongSafeCells, White) {
+		if b.flags & whiteLongCastling != 0 && (b.allOccupied & whiteLongEmptyCells) == 0 && b.isPathSafe(whiteLongSafeCells, White) {
 			res |= c1
 		}
 	} else {
-		if b.flags & blackShortCastling != 0 && (b.occupied & blackShortEmptyCells) == 0 && b.isPathSafe(blackShortSafeCells, Black) {
+		if b.flags & blackShortCastling != 0 && (b.allOccupied & blackShortEmptyCells) == 0 && b.isPathSafe(blackShortSafeCells, Black) {
 			res |= g8
 		}
-		if b.flags & blackLongCastling != 0 && (b.occupied & blackLongEmptyCells) == 0 && b.isPathSafe(blackLongSafeCells, Black) {
+		if b.flags & blackLongCastling != 0 && (b.allOccupied & blackLongEmptyCells) == 0 && b.isPathSafe(blackLongSafeCells, Black) {
 			res |= c8
 		}
 	}
@@ -155,7 +157,7 @@ func (b *Board) ray(p uint64, shift1 uint64, shift2 uint64, mask uint64) uint64 
 
 		res |= curr
 
-		if curr & b.occupied != 0 { break }
+		if curr & b.allOccupied != 0 { break }
 	}
 
 	return res
