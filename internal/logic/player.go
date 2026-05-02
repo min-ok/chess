@@ -1,5 +1,7 @@
 package logic
 
+import "fmt"
+
 
 func (b *Board) GetPlayerEnemyFigures(p uint64) uint64 {
 	if p & b.allOccupied == 0 {
@@ -23,9 +25,12 @@ func (b *Board) MakeBotMove() (int, int) {
 	bestMove := b.getBestMove(botDepth, b.turn)
 
 	if bestMove.from != 0 {
+
 		b.move(bestMove.from, bestMove.to, bestMove.movingPiece, bestMove.eatenPiece, bestMove.team)
 		b.turn = getOppositeTeam(b.turn)
 	}
+
+	fmt.Println(bestMove)
 
 	return b.checkGameStatus(b.turn), b.turn
 }
@@ -53,4 +58,9 @@ func (b *Board) GetPlayerLegalMoves(p uint64) uint64 {
 	}
 
 	return b.getLegalMoves(p, b.getPieceType(p), team)
+}
+
+
+func (b *Board) GetFigures() [2][6]uint64 {
+	return b.bitboard
 }

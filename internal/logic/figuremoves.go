@@ -4,6 +4,39 @@ import (
 	"math/bits"
 )
 
+var magicKnight [64]uint64
+var magicRook [64][1024]uint64
+
+// var rookMasks[64]
+
+
+func setMagic() {
+	for i := 0; i < 64; i += 1 {
+		p := uint64(1) << i
+
+		magicKnight[i] |= (p << 17) & notA
+		magicKnight[i] |= (p << 15) & notH
+		magicKnight[i] |= (p << 10) & notAB
+		magicKnight[i] |= (p << 6) & notHG
+
+		magicKnight[i] |= (p >> 15) & notA
+		magicKnight[i] |= (p >> 17) & notH
+		magicKnight[i] |= (p >> 6) & notAB
+		magicKnight[i] |= (p >> 10) & notHG
+	}
+
+	for i := 0; i < 64; i += 1 {
+		for occupied := uint64(0); occupied < 1024; occupied += 1 {
+			p := uint64(1) << i
+
+			magicRook[i][occupied] |= ray(p, 8, 0, 0, &occupied)
+			magicRook[i][occupied] |= ray(p, 0, 8, 0, &occupied)
+			magicRook[i][occupied] |= ray(p, 0, 1, notA, &occupied)
+			magicRook[i][occupied] |= ray(p, 1, 0, notH, &occupied)
+		}
+	}
+}
+
 
 func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 	var moves uint64
@@ -42,39 +75,27 @@ func (b *Board) getPawnSquaresAttacked(p uint64, team int) uint64 {
 func (b *Board) getBishopSquaresAttacked(p uint64) uint64 {
 	var moves uint64
 
-	moves |= b.ray(p, 9, 0, notH)
-	moves |= b.ray(p, 7, 0, notA)
-	moves |= b.ray(p, 0, 7, notH)
-	moves |= b.ray(p, 0, 9, notA)
+	moves |= ray(p, 9, 0, notH, b.allOccupied)
+	moves |= ray(p, 7, 0, notA, b.allOccupied)
+	moves |= ray(p, 0, 7, notH, b.allOccupied)
+	moves |= ray(p, 0, 9, notA, b.allOccupied)
 
 	return moves
 }
 
 
 func (b *Board) getKnightSquaresAttacked(p uint64) uint64 {
-	var moves uint64
-
-	moves |= (p << 17) & notA
-	moves |= (p << 15) & notH
-	moves |= (p << 10) & notAB
-	moves |= (p << 6) & notHG
-
-	moves |= (p >> 15) & notA
-	moves |= (p >> 17) & notH
-	moves |= (p >> 6) & notAB
-	moves |= (p >> 10) & notHG
-
-	return moves
+	return magicKnight[bits.TrailingZeros64(p)]
 }
 
 
 func (b *Board) getRookSquaresAttacked(p uint64) uint64 {
 	var moves uint64
 
-	moves |= b.ray(p, 8, 0, 0)
-	moves |= b.ray(p, 0, 8, 0)
-	moves |= b.ray(p, 0, 1, notA)
-	moves |= b.ray(p, 1, 0, notH)
+	moves |= ray(p, 8, 0, 0, b.allOccupied)
+	moves |= ray(p, 0, 8, 0, b.allOccupied)
+	moves |= ray(p, 0, 1, notA, b.allOccupied)
+	moves |= ray(p, 1, 0, notH, b.allOccupied)
 
 	return moves
 }
@@ -142,7 +163,7 @@ func (b *Board) isPathSafe(cells uint64, team int) bool {
 
 
 
-func (b *Board) ray(p uint64, shift1 uint64, shift2 uint64, mask uint64) uint64 {
+func ray(p uint64, shift1 uint64, shift2 uint64, mask uint64, occupied *uint64) uint64 {
 	var res uint64
 	curr := p
 
@@ -156,8 +177,30 @@ func (b *Board) ray(p uint64, shift1 uint64, shift2 uint64, mask uint64) uint64 
 
 		res |= curr
 
-		if curr & b.allOccupied != 0 { break }
+		if curr & (*occupied % 2) != 0 { break }
+		*occupied /= 2
 	}
 
 	return res
 }
+
+
+// func ray(p uint64, shift1 uint64, shift2 uint64, mask uint64, occupied uint64) uint64 {
+// 	var res uint64
+// 	curr := p
+
+// 	for {
+// 		if mask != 0 && (curr & mask == 0) { break }
+
+// 		curr <<= shift1
+// 		curr >>= shift2
+
+// 		if curr == 0 { break }
+
+// 		res |= curr
+
+// 		if curr & occupied != 0 { break }
+// 	}
+
+// 	return res
+// }

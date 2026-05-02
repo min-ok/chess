@@ -88,8 +88,3 @@ func (b *Board) updateAll() {
 	}
 	b.allOccupied = b.teamOccupied[White] | b.teamOccupied[Black]
 }
-
-
-func (b *Board) GetFigures() [2][6]uint64 {
-	return b.bitboard
-}

@@ -1,7 +1,6 @@
 package logic
 
 import (
-	// "fmt"
 	"math/bits"
 )
 
@@ -19,6 +18,8 @@ func CreateBoard() *Board {
 
 	b.arrangeFigures()
 	b.updateAll()
+
+	setMagic()
 
 	return b
 }
@@ -178,7 +179,7 @@ func (b *Board) undo() {
 func (b *Board) checkGameStatus(team int) int {
 	hasMoves := false
 
-	for i := 0; i < 6 && !hasMoves; i++ {
+	for i := 0; i < 6 && !hasMoves; i += 1 {
 		bitsLeft := b.bitboard[team][i]
 		for bitsLeft != 0 {
 			p := bitsLeft & -bitsLeft
